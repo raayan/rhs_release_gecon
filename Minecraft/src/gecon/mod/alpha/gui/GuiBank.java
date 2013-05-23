@@ -70,8 +70,8 @@ public class GuiBank extends GuiContainer {
 
 		this.fontRenderer.drawString(player.getEntityName() +"'s Bank", 10, 9, 0xFFFFFF);
 		this.fontRenderer.drawString("Name", 28, 23, 0xFFFFFF);
-		this.fontRenderer.drawString("Stored", 81, 23, 0xFFFFFF);
-		this.fontRenderer.drawString("Holding", 131, 23, 0xFFFFFF);
+		this.fontRenderer.drawString("Bank", 81, 23, 0xFFFFFF);
+		this.fontRenderer.drawString("Player", 131, 23, 0xFFFFFF);
 		
 		int screenPosX = (this.width - this.xSize) / 2;
 		int screenPosY = (this.height - this.ySize) / 2;
@@ -86,8 +86,9 @@ public class GuiBank extends GuiContainer {
 		int itemHeight = 19;
 		int locFull = 136;
 		int locNull = 155;
+		int up = 4;
 		
-		for (int i = 0; i < index + 4; i++){
+		for (int i = index; i < index + up; i++){
 			try{
 			if(BlockBank.bankList.get(i) != null){
 				this.drawTexturedModalRect(21, 34 + i * 19, 0, locFull, itemWidth, itemHeight);
@@ -98,7 +99,7 @@ public class GuiBank extends GuiContainer {
 
 			}
 		}
-		for (int i = 0; i < index + 1; i++){
+		for (int i = index; i < index + up; i++){
 			try{
 			if(BlockBank.bankList.get(i) != null){
 				this.fontRenderer.drawString(BlockBank.bankList.get(i).getDisplayName().substring(0), 28, 39 + i * 19, 0xFFFFFF);
@@ -110,7 +111,8 @@ public class GuiBank extends GuiContainer {
 			}catch(IndexOutOfBoundsException e){
 
 			}catch(NullPointerException e){
-				
+				this.fontRenderer.drawString("0", 131, 39 + i * 19, 0xFFFFFF);
+
 			}
 		}
 		
@@ -119,11 +121,15 @@ public class GuiBank extends GuiContainer {
 	}
 	public int getNumberInPlayer(ItemStack item){
 		int i = 0;
+
 		for(ItemStack x: player.inventory.mainInventory){
-			if(x.itemID == item.itemID)
-				i += x.stackSize;
-		
+			if(x != null)
+				if(x.itemID == item.itemID)
+					i += x.stackSize;
+				
 		}
+		
+
 		return i;
 	}
 	

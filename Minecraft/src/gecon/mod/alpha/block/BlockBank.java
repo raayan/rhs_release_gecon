@@ -28,7 +28,7 @@ public class BlockBank extends BlockGECON {
 		bankList.add(new ItemStack(1, 62, 0));
 		bankList.add(new ItemStack(3, 22, 0));
 		bankList.add(new ItemStack(4, 12, 0));
-		bankList.add(new ItemStack(38, 2, 0));
+//		bankList.add(new ItemStack(38, 2, 0));
 
 
 	}
