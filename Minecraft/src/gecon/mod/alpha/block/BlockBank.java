@@ -21,14 +21,16 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockBank extends BlockGECON {
 	private Minecraft mc;
-	public static ArrayList<ItemStack> bankList = new ArrayList<ItemStack>();
+	public static ArrayList<BankItem> bankList = new ArrayList<BankItem>();
 	
 	public BlockBank(int id, Material material) {
 		super(id, material);
-		bankList.add(new ItemStack(1, 62, 0));
-		bankList.add(new ItemStack(3, 22, 0));
-		bankList.add(new ItemStack(4, 12, 0));
-//		bankList.add(new ItemStack(38, 2, 0));
+		bankList.add(new BankItem(new ItemStack(1, 62, 0)));
+		bankList.add(new BankItem(new ItemStack(3, 22, 0)));
+		bankList.add(new BankItem(new ItemStack(4, 12, 0)));
+		bankList.add(new BankItem(new ItemStack(38, 2, 0)));
+		bankList.add(new BankItem(new ItemStack(84, 2, 0)));
+		bankList.add(new BankItem(new ItemStack(90, 2, 0)));
 
 
 	}
