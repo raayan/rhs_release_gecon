@@ -1,9 +1,10 @@
 package gecon.mod.alpha.gui;
 
 import gecon.mod.alpha.BankItem;
+import gecon.mod.alpha.BankItemDuo;
 import gecon.mod.alpha.gECON;
 import gecon.mod.alpha.block.BlockBank;
-import gecon.mod.alpha.container.ContainerBank;
+import gecon.mod.alpha.container.ContainerGECON;
 
 import java.util.ArrayList;
 
@@ -17,8 +18,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-import org.lwjgl.opengl.GL11;
-
 public class GuiBank extends GuiContainer {
 	/**
 	 * The inventory of the player
@@ -27,7 +26,7 @@ public class GuiBank extends GuiContainer {
 	/**
 	 * The player
 	 */
-	public EntityPlayer player;
+	public EntityPlayer entityPlayer;
 	/**
 	 * The reference of the container
 	 */
@@ -39,9 +38,12 @@ public class GuiBank extends GuiContainer {
     /**
      * An arrayList of the 4 items to be displayed.
      */
-    public ArrayList<BankItem> currentlyDisplayedItems;
+    public ArrayList<BankItemDuo> currentlyDisplayedItems;
    
     public ArrayList<BankItem> bankStoredItems;
+    
+    public ArrayList<BankItem> playerStoredItems;
+
     /**
      * an index for where to begin the item search
      */
@@ -54,12 +56,17 @@ public class GuiBank extends GuiContainer {
 	
 	
 	public GuiBank(EntityPlayer player, World world, int x, int y, int z) {
-		super(new ContainerBank(player, world, x, y, z));		
-		this.player = player;
+		super(new ContainerGECON(player, world, x, y, z));		
+		this.entityPlayer = BlockBank.player;
+
+		compile();
+
+	}
+	public void compile(){
 		this.collateItems();
-
-	
-
+		this.convertToBankList();
+		this.compareList();
+		this.clean();
 	}
 	public void initGui(){
 		int screenPosX = (this.width - this.xSize) / 2;
@@ -73,21 +80,22 @@ public class GuiBank extends GuiContainer {
 		this.buttonList.add(new GuiButton(1, x, y + 44, 20, 20, ">"));
 		
 		//Incrementation Buttons
+		
 		//Set A
-		this.buttonList.add(new GuiButton(9, x - 88, y - 35, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(10, x - 88, y - 25, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(3, x - 88, y - 35, 10, 10, "+"));
+		this.buttonList.add(new GuiButton(4, x - 88, y - 25, 10, 9, "-"));
 		
 		//Set B
-		this.buttonList.add(new GuiButton(3, x - 88, y - 16, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(4, x - 88, y - 6, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(5, x - 88, y - 16, 10, 10, "+"));
+		this.buttonList.add(new GuiButton(6, x - 88, y - 6, 10, 9, "-"));
 		
 		//Set C
-		this.buttonList.add(new GuiButton(5, x - 88, y + 3, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(6, x - 88, y + 13, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(7, x - 88, y + 3, 10, 10, "+"));
+		this.buttonList.add(new GuiButton(8, x - 88, y + 13, 10, 9, "-"));
 		
 		//Set D
-		this.buttonList.add(new GuiButton(7, x - 88, y + 22, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(8, x - 88, y + 32, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(9, x - 88, y + 22, 10, 10, "+"));
+		this.buttonList.add(new GuiButton(10, x - 88, y + 32, 10, 9, "-"));
 		
 
 	
@@ -124,7 +132,7 @@ public class GuiBank extends GuiContainer {
         this.searchField.isFocused();
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
-		this.fontRenderer.drawString(player.getEntityName() +"'s Bank", x - 88,y - 59, 0xFFFFFF); //10, 9
+		this.fontRenderer.drawString(entityPlayer.getEntityName() +"'s Bank", x - 88,y - 59, 0xFFFFFF); //10, 9
 		pages = Math.ceil(BlockBank.bankList.size()/4.0);
 		currentPage = (int)Math.floor((double)(index/4 + 1));
 		this.fontRenderer.drawString("Page " + currentPage + " of " + (int)pages, x - 90, y + 50, 0xFFFFFF);
@@ -156,6 +164,29 @@ public class GuiBank extends GuiContainer {
 		
 		
 		//Incrementation
+		int i = button.id;
+		if(button.id == 3 || button.id == 5 || button.id == 7 || button.id == 9){
+			int j = (i - 3)/2;
+			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).rightQty > 0){
+				BlockBank.player.inventory.addItemStackToInventory(new ItemStack(currentlyDisplayedItems.get(index + j).ID, 1, 0));
+				currentlyDisplayedItems.get(index + j).rightItem.decr(1);
+				compile();
+			}
+		}
+		
+		if(button.id == 4 || button.id == 6 || button.id == 8 || button.id == 10){
+			int j = (i - 4)/2;
+			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).leftQty > 0){
+				BlockBank.player.inventory.consumeInventoryItem(currentlyDisplayedItems.get(index + j).ID);
+				try{
+				currentlyDisplayedItems.get(index + j).rightItem.incr(1);
+				}catch(NullPointerException e){
+					BlockBank.bankList.add(new ItemStack(currentlyDisplayedItems.get(index + j).leftItem.ID, 1, 0));
+					
+				}
+				compile();
+			}
+		}
 
 	}
 	
@@ -191,10 +222,10 @@ public class GuiBank extends GuiContainer {
 		
 		for (int i = index; i < index + up; i++){
 			try{
-			if(BlockBank.bankList.get(i) != null){
+			if(currentlyDisplayedItems.get(i) != null){
 				this.fontRenderer.drawString(this.currentlyDisplayedItems.get(i).name, x + 4,  y - 30  + (i%4) * 19, 0xFFFFFF);
-//				this.fontRenderer.drawString((Integer.toString(BlockBank.bankList.get(i).stackSize)), x + 74,  y - 30  + (i%4) * 19, 0xFFFFFF);
-//				this.fontRenderer.drawString(Integer.toString(getNumberInPlayer(BlockBank.bankList.get(i))), x + 118, y - 30 + (i%4) * 19, 0xFFFFFF);
+				this.fontRenderer.drawString(Integer.toString(this.currentlyDisplayedItems.get(i).rightQty), x + 74,  y - 30  + (i%4) * 19, 0xFFFFFF);
+				this.fontRenderer.drawString(Integer.toString(this.currentlyDisplayedItems.get(i).leftQty), x + 118, y - 30 + (i%4) * 19, 0xFFFFFF);
 
 
 			}
@@ -204,45 +235,60 @@ public class GuiBank extends GuiContainer {
 				this.fontRenderer.drawString("0", x + 118, y - 30 + (i%4) * 19, 0xFFFFFF);
 
 			}
-		}
+		} 
 	}
+	
+	/**
+	 * Haha right now this method is doing a show all I am going to save this out
+	 */
 	public void collateItems(){
 		ArrayList<BankItem> list = new ArrayList<BankItem>();
-		try{
-		for(BankItem x: BlockBank.bankList){
-			for(BankItem y: list){
-				if(y.ID == x.ID){
-					y.quantity += x.quantity;
-				}else{
-					list.add(x);
+		boolean turp = false;
+			for(ItemStack x: BlockBank.bankList){
+				turp = false;
+				for(BankItem y: list){
+					if(x.itemID == y.ID){
+						y.add(x);
+						turp = true;
+						break;
+					}
 				}
-			}
-		}
-		for(ItemStack x: player.inventory.mainInventory){
-			int i = 0;
-			for(BankItem y: BlockBank.bankList){				
-				if(y.ID == x.itemID){
-					y.add(x);
-					i = 1;
-				}
-				if(i==0){
+				if(!turp){
 					list.add(new BankItem(x));
 				}
-				
 			}
-		}
-		}catch (NullPointerException e){
-			
-		}
-		for(BankItem x: list){
-			System.out.println(x.name + x.quantity);
-		}
+
 		bankStoredItems = list;
 	}
+	public void convertToBankList(){
+		ArrayList<BankItem> list = new ArrayList<BankItem>();
+
+		boolean turp = false;
+		for(ItemStack x: entityPlayer.inventory.mainInventory){
+			turp = false;
+			if(x != null){
+				for(BankItem y: list){
+					if(x != null && x.itemID == y.ID){
+						y.add(x);
+						turp = true;
+						break;
+					}
+				}
+				if(!turp){
+					list.add(new BankItem(x));
+				}
+			}
+		}
+		playerStoredItems = list;
+		
+	}
+	
+	
+	
 	public int getNumberInPlayer(ItemStack item){
 		int i = 0;
 
-		for(ItemStack x: player.inventory.mainInventory){
+		for(ItemStack x: entityPlayer.inventory.mainInventory){
 			if(x != null)
 				if(x.itemID == item.itemID)
 					i += x.stackSize;
@@ -251,5 +297,39 @@ public class GuiBank extends GuiContainer {
 		
 
 		return i;
+	}
+	public void compareList(){
+		ArrayList<BankItemDuo> list = new ArrayList<BankItemDuo>();
+		boolean turp = false;
+		for(BankItem x: playerStoredItems){
+			list.add(new BankItemDuo(x, null));
+		}
+		for(BankItem x: bankStoredItems){
+			turp = false;
+			for(BankItemDuo y: list){
+				if(y.leftItem != null && y.leftItem.ID == x.ID ){
+					y.setRightItem(x);
+					turp = true;
+					break;
+				}
+			}
+			if(!turp){
+				list.add(new BankItemDuo(null, x));
+			}
+		}
+		for(BankItemDuo x: list){
+			System.out.println(x.name + x.rightQty + ":" + x.leftQty);
+		}
+		currentlyDisplayedItems = list;
+
+	}
+	public boolean clean(){
+		for(ItemStack x: BlockBank.bankList){
+			if(x.stackSize == 0){
+				BlockBank.bankList.remove(x);
+				return true;
+			}
+		}
+		return false;
 	}
 }
