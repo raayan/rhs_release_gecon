@@ -2,7 +2,6 @@ package gecon.mod.alpha.block;
 
 import gecon.mod.alpha.BankItem;
 import gecon.mod.alpha.container.ContainerGECON;
-import gecon.mod.alpha.container.TileEntityBank;
 import gecon.mod.alpha.gui.GuiBank;
 
 import java.util.ArrayList;
@@ -20,8 +19,19 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockBank extends BlockGECON {
+	/**
+	 * A list of bankItems, only for testing purposes, prior to the Database
+	 */
 	public static ArrayList<ItemStack> bankList = new ArrayList<ItemStack>();
+	/**
+	 * The player who right clicks the block
+	 */
 	public static EntityPlayer player;
+	/**
+	 * Constructor
+	 * @param id The item ID
+	 * @param material The map material
+	 */
 	public BlockBank(int id, Material material) {
 		super(id, material);
 		bankList.add((new ItemStack(3, 22, 0)));
@@ -33,6 +43,9 @@ public class BlockBank extends BlockGECON {
 
 	}
 
+	/**
+	 * When the player right clicks this this is activated.
+	 */
 	@SideOnly(Side.CLIENT)
 	public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int f, float a, float b, float c) {	
 		this.player = player;
@@ -43,9 +56,5 @@ public class BlockBank extends BlockGECON {
 		}
 		
 		return true;
-	}
-	
-	public TileEntity createNewTileEntity(World par1World) {
-		return new TileEntityBank();
 	}
 }

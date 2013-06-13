@@ -5,6 +5,7 @@ import gecon.mod.alpha.BankItemDuo;
 import gecon.mod.alpha.gECON;
 import gecon.mod.alpha.block.BlockBank;
 import gecon.mod.alpha.container.ContainerGECON;
+import gecon.mod.alpha.misc.Searcher;
 
 import java.util.ArrayList;
 
@@ -35,6 +36,7 @@ public class GuiBank extends GuiContainer {
 	 * The textbox used for refining a search
 	 */
     private GuiTextField searchField;
+    private String searching = "";
     /**
      * An arrayList of the 4 items to be displayed.
      */
@@ -48,13 +50,35 @@ public class GuiBank extends GuiContainer {
      * an index for where to begin the item search
      */
 	private int index = 0;
+	/**
+	 * Width of the bank items
+	 */
 	private int xSize = 195;
+	/**
+	 * Height of the bank items
+	 */
 	private int ySize = 136;
+	/**
+	 * The page which you are inspecting
+	 */
 	private int currentPage;
+	/**
+	 * The total number of pages
+	 */
 	private double pages;
+	/**
+	 * The quantity which you are withdrawing and depositing at.
+	 */
 	private int qty = 1;
 	
-	
+	/**
+	 * Constructor
+	 * @param player The player accessing the GUI
+	 * @param world The world the GUI is in
+	 * @param x X Coordinate of the Player
+	 * @param y Y Coordinate of the Player
+	 * @param z Z Coordinate of the Player
+	 */
 	public GuiBank(EntityPlayer player, World world, int x, int y, int z) {
 		super(new ContainerGECON(player, world, x, y, z));		
 		this.entityPlayer = BlockBank.player;
@@ -62,12 +86,19 @@ public class GuiBank extends GuiContainer {
 		compile();
 
 	}
+	
+	/**
+	 * Grab all the info and display it in the list.
+	 */
 	public void compile(){
 		this.collateItems();
 		this.convertToBankList();
 		this.compareList();
 		this.clean();
 	}
+	/**
+	 * Initiate the GUI's buttons
+	 */
 	public void initGui(){
 		int screenPosX = (this.width - this.xSize) / 2;
 		int screenPosY = (this.height - this.ySize) / 2;
@@ -75,6 +106,9 @@ public class GuiBank extends GuiContainer {
 		int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
         
+    	this.searchField = new GuiTextField(this.fontRenderer, scaledRes.getScaledWidth()/2 + 35, scaledRes.getScaledHeight()/2 - 60, 53, 10);
+	    this.searchField.setMaxStringLength(6);
+        this.searchField.setFocused(false);
         
 		this.buttonList.add(new GuiButton(2, x - 20, y + 44, 20, 20, "<"));
 		this.buttonList.add(new GuiButton(1, x, y + 44, 20, 20, ">"));
@@ -101,6 +135,9 @@ public class GuiBank extends GuiContainer {
 	
 		
 	}
+	/**
+	 * Draw the background layer of the GUI
+	 */
 	protected void drawGuiContainerBackgroundLayer(float f, int i, int j) {
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
 
@@ -108,28 +145,51 @@ public class GuiBank extends GuiContainer {
 
 		this.drawTexturedModalRect((scaledRes.getScaledWidth() - this.xSize)/2, (scaledRes.getScaledHeight() - this.ySize)/2, 0, 0, this.xSize, this.ySize);
 	}
-
+	/**
+	 * Draw everything on the screen
+	 */
 	public void drawScreen(int x, int y, float f){
 		super.drawScreen(x, y, f);
-		
+        this.searchField.drawTextBox();
+
 		
 
 		
 	}
 	
-	
+	/**
+	 * Updates the graphics on the screen
+	 */
 	@Override
 	public void updateScreen(){
-	
+		if(searchField.getText().length() > 0){
+			searching = searchField.getText();
+		}
+		compile();
+
 	}
+	public void mouseClicked(int i, int j, int k){
+		super.mouseClicked(i, j, k);
+		searchField.mouseClicked(i, j, k);
+	}
+	
+	/**
+	 * Method to grab keys that are typed
+	 */
+	public void keyTyped(char c, int i){
+		if(c != 'e')
+			super.keyTyped(c, i);
+		searchField.textboxKeyTyped(c, i);
+		searching = searchField.getText();
+		compile();
+	}
+	/**
+	 * Draw the foremost layer of the GUI with text
+	 */
 	protected void drawGuiContainerForegroundLayer(int par1, int par2) {
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
 		
-		this.searchField = new GuiTextField(this.fontRenderer, scaledRes.getScaledWidth()/2 + 35, scaledRes.getScaledHeight()/2 - 60, 53, this.fontRenderer.FONT_HEIGHT);
-	    this.searchField.setMaxStringLength(15);
-	    this.searchField.setTextColor(16777215);
-        this.searchField.drawTextBox();
-        this.searchField.isFocused();
+	
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
 		this.fontRenderer.drawString(entityPlayer.getEntityName() +"'s Bank", x - 88,y - 59, 0xFFFFFF); //10, 9
@@ -151,7 +211,9 @@ public class GuiBank extends GuiContainer {
 		this.drawItems();
 	}
 	
-	
+	/**
+	 * Captures the event of button being clicked.
+	 */
 	public void actionPerformed(GuiButton button)
 	{
 		if(button.id == 1)
@@ -189,7 +251,9 @@ public class GuiBank extends GuiContainer {
 		}
 
 	}
-	
+	/**
+	 * Draws the elements in the list.
+	 */
 	private void drawItems(){
 		int itemWidth = 153;
 		int itemHeight = 19;
@@ -200,10 +264,7 @@ public class GuiBank extends GuiContainer {
         int x = (scaledRes.getScaledWidth() - 153)/2;
         int y = (scaledRes.getScaledHeight())/2;
 		
-        
-        
-//      Legacy Code
-		for (int i = index; i < index + up; i++){
+        for (int i = index; i < index + up; i++){
 			try{
 				if(this.currentlyDisplayedItems.get(i) != null){
 					this.drawTexturedModalRect(x, y - 34 + (i%4) * 19, 0, locFull, itemWidth, itemHeight);
@@ -239,7 +300,7 @@ public class GuiBank extends GuiContainer {
 	}
 	
 	/**
-	 * Haha right now this method is doing a show all I am going to save this out
+	 * Populate the lists with items to be displayed.
 	 */
 	public void collateItems(){
 		ArrayList<BankItem> list = new ArrayList<BankItem>();
@@ -259,6 +320,7 @@ public class GuiBank extends GuiContainer {
 			}
 
 		bankStoredItems = list;
+		
 	}
 	public void convertToBankList(){
 		ArrayList<BankItem> list = new ArrayList<BankItem>();
@@ -283,21 +345,9 @@ public class GuiBank extends GuiContainer {
 		
 	}
 	
-	
-	
-	public int getNumberInPlayer(ItemStack item){
-		int i = 0;
-
-		for(ItemStack x: entityPlayer.inventory.mainInventory){
-			if(x != null)
-				if(x.itemID == item.itemID)
-					i += x.stackSize;
-				
-		}
-		
-
-		return i;
-	}
+	/**
+	 * Create the data of the compared lists.
+	 */
 	public void compareList(){
 		ArrayList<BankItemDuo> list = new ArrayList<BankItemDuo>();
 		boolean turp = false;
@@ -317,12 +367,16 @@ public class GuiBank extends GuiContainer {
 				list.add(new BankItemDuo(null, x));
 			}
 		}
-		for(BankItemDuo x: list){
-			System.out.println(x.name + x.rightQty + ":" + x.leftQty);
-		}
 		currentlyDisplayedItems = list;
-
+		if(searching.length() > 0){
+			currentlyDisplayedItems = Searcher.recomb2(currentlyDisplayedItems, searching);
+		}
 	}
+	
+	/**
+	 * Remove all the ItemStacks which hvae 0 items in them
+	 * @return True if something is cleaned, false if nothing is cleaned.
+	 */
 	public boolean clean(){
 		for(ItemStack x: BlockBank.bankList){
 			if(x.stackSize == 0){

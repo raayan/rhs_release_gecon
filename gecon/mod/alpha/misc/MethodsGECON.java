@@ -1,5 +1,7 @@
+/**
+ * Just a Javadoc to store all the methods which may be of general use for later.
+ */
 package gecon.mod.alpha.misc;
-
 import gecon.mod.alpha.BankItem;
 import gecon.mod.alpha.block.BlockBank;
 

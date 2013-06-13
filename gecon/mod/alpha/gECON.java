@@ -140,7 +140,7 @@ public class gECON extends BaseMod {
 	}
 
 	/**
-	 * TBD
+	 * Required code to load the mode.
 	 */
 	@Override
 	public void load() {
