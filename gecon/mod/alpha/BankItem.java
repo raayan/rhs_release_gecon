@@ -34,17 +34,10 @@ public class BankItem {
 	 * @param par1Item Item to be named afterr
 	 */
 	public void setName(ItemStack par1Item){
-		if(par1Item.getDisplayName().length() < 6){
+		if(par1Item.getDisplayName().length() < 8){
 			this.name = par1Item.getDisplayName();
-		}else if(par1Item.getDisplayName().contains("Block")){
-			if(par1Item.getDisplayName().length() < 15)
-				this.name = "b" + par1Item.getDisplayName().substring(9);
-			else
-				this.name = "b" + par1Item.getDisplayName().substring(9, 14);
-
-			
 		}else{
-			this.name = par1Item.getDisplayName().substring(0, 6);
+			this.name = par1Item.getDisplayName().substring(0, 8);
 				
 		}
 	}
