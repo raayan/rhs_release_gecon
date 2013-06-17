@@ -1,5 +1,7 @@
 package gecon.mod.alpha;
 
+import gecon.mod.alpha.misc.DatabaseMethods;
+
 import java.util.ArrayList;
 
 import net.minecraft.item.ItemStack;
@@ -14,20 +16,34 @@ public class BankItem {
 	 */
 	public String name;
 	/**
+	 * Super short name
+	 */
+	public String sName;
+	/**
+	 * Current Suggested Price
+	 */
+	public double Sprice; 
+	public int size = 0;
+	/**
 	 * ID of the items stored.
 	 */
 	public int ID;
+	
+	public int meta = 0;
 	/**
 	 * Constructor
 	 * @param par1Item ItemStack to be modeled after.
 	 */
 	public BankItem(ItemStack par1Item){
+		size = par1Item.stackSize;
 		items.add(par1Item);
+		meta = par1Item.getItemDamage();
 		ID = par1Item.itemID;
 		setName(par1Item);
 		
-		
-		
+	}
+	public void updateSPrice(){
+		Sprice = DatabaseMethods.getCurrentSuggestedPrice("" + ID);
 	}
 	/** 
 	 * Sets and shortens the name of the ItemStack
@@ -40,6 +56,13 @@ public class BankItem {
 			this.name = par1Item.getDisplayName().substring(0, 8);
 				
 		}
+		
+		if(par1Item.getDisplayName().length() < 6){
+			this.sName = par1Item.getDisplayName();
+		}else{
+			this.sName = par1Item.getDisplayName().substring(0, 6);
+				
+		}
 	}
 	/**
 	 * Add an ItemStack to a BankItem
@@ -47,6 +70,7 @@ public class BankItem {
 	 */
 	public void add(ItemStack par1Item){
 		int i = par1Item.stackSize;
+		size += i;
 		ItemStack x = items.get(items.size() - 1);
 		if(x.stackSize < 64){
 			i = i - (64 - x.stackSize);
@@ -56,16 +80,8 @@ public class BankItem {
 			items.add(new ItemStack(par1Item.stackSize, i, 0));
 		}
 	}
-	/**
-	 * Gets the total size of the BankItem
-	 * @return The size of all the ItemStacks together.
-	 */
-	public int getSize(){
-		int i = 0;
-		for(ItemStack x: items){
-			i += x.stackSize;
-		}
-		return i;
+	public void setSize(int i){
+		size = i;
 	}
 	/**
 	 * Decrement the size of the BankItem
@@ -89,20 +105,4 @@ public class BankItem {
 				}
 			}
 	}
-	/**
-	 * Increment the size of the BankItem
-	 * @param q Size to be incremented by.
-	 */
-	public void incr(int q){
-		int i = items.size() -1;
-		while(i >= 0){
-			ItemStack x = items.get(i);
-			if(x.stackSize + q <= 64){
-				x.stackSize += q;
-				break;
-			}else{
-				items.add(new ItemStack(this.ID, q, 0));
-			}
-		}
-}
 }

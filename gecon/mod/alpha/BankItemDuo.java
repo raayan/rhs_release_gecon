@@ -40,13 +40,13 @@ public class BankItemDuo {
 	 */
 	public BankItemDuo(BankItem par1BankItem, BankItem par2BankItem){
 		if(par1BankItem != null){
-			leftQty = par1BankItem.getSize();
+			leftQty = par1BankItem.size;
 			leftItem = par1BankItem;
 			name = par1BankItem.name;
 			ID = par1BankItem.ID;
 		}
 		if(par2BankItem != null){
-			rightQty = par2BankItem.getSize();
+			rightQty = par2BankItem.size;
 			rightItem = par2BankItem;
 			name = par2BankItem.name;
 			ID = par2BankItem.ID;
@@ -69,7 +69,7 @@ public class BankItemDuo {
 	 */
 	public void setLeftItem(BankItem item){
 		leftItem = item;
-		leftQty = item.getSize();
+		leftQty = item.size;
 	}
 	/**
 	 * Sets the right item post construction
@@ -77,7 +77,7 @@ public class BankItemDuo {
 	 */
 	public void setRightItem(BankItem item){
 		rightItem = item;
-		rightQty = item.getSize();
+		rightQty = item.size;
 	}
 	
 }

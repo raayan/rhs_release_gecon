@@ -5,6 +5,7 @@ import gecon.mod.alpha.BankItemDuo;
 import gecon.mod.alpha.gECON;
 import gecon.mod.alpha.block.BlockBank;
 import gecon.mod.alpha.container.ContainerGECON;
+import gecon.mod.alpha.misc.DatabaseMethods;
 import gecon.mod.alpha.misc.Searcher;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -37,6 +39,8 @@ public class GuiBank extends GuiContainer {
 	 */
     private GuiTextField searchField;
     private String searching = "";
+   private GuiTextField quantityField;
+    private int transQuantity = 1;
     /**
      * An arrayList of the 4 items to be displayed.
      */
@@ -45,7 +49,11 @@ public class GuiBank extends GuiContainer {
     public ArrayList<BankItem> bankStoredItems;
     
     public ArrayList<BankItem> playerStoredItems;
-
+    private ScaledResolution PermscaledRes;
+	
+	
+    private int Permx;
+    private int Permy;
     /**
      * an index for where to begin the item search
      */
@@ -61,16 +69,17 @@ public class GuiBank extends GuiContainer {
 	/**
 	 * The page which you are inspecting
 	 */
-	private int currentPage;
 	/**
 	 * The total number of pages
 	 */
-	private double pages;
 	/**
 	 * The quantity which you are withdrawing and depositing at.
 	 */
+	private String coins;
 	private int qty = 1;
-	
+	private int cooldown = 100;
+	private int tickCount = 0;
+	private boolean coolingDown = false;
 	/**
 	 * Constructor
 	 * @param player The player accessing the GUI
@@ -82,19 +91,17 @@ public class GuiBank extends GuiContainer {
 	public GuiBank(EntityPlayer player, World world, int x, int y, int z) {
 		super(new ContainerGECON(player, world, x, y, z));		
 		this.entityPlayer = BlockBank.player;
-
 		compile();
-
+		DatabaseMethods.hasPlayerAccount(entityPlayer.username);
+		coins = Integer.toString(DatabaseMethods.getCoins(entityPlayer.username));
 	}
 	
 	/**
 	 * Grab all the info and display it in the list.
 	 */
 	public void compile(){
-		this.collateItems();
 		this.convertToBankList();
 		this.compareList();
-		this.clean();
 	}
 	/**
 	 * Initiate the GUI's buttons
@@ -105,10 +112,15 @@ public class GuiBank extends GuiContainer {
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
 		int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
-        
+		PermscaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
+		Permx = PermscaledRes.getScaledWidth()/2;
+		Permy = PermscaledRes.getScaledHeight()/2;
     	this.searchField = new GuiTextField(this.fontRenderer, scaledRes.getScaledWidth()/2 + 35, scaledRes.getScaledHeight()/2 - 60, 53, 10);
 	    this.searchField.setMaxStringLength(6);
         this.searchField.setFocused(false);
+        this.quantityField = new GuiTextField(this.fontRenderer, scaledRes.getScaledWidth()/2 - 60, scaledRes.getScaledHeight()/2 + 45, 33, 18);
+	    this.quantityField.setMaxStringLength(4);
+        this.quantityField.setFocused(false);
         
 		this.buttonList.add(new GuiButton(2, x - 20, y + 44, 20, 20, "<"));
 		this.buttonList.add(new GuiButton(1, x, y + 44, 20, 20, ">"));
@@ -116,24 +128,27 @@ public class GuiBank extends GuiContainer {
 		//Incrementation Buttons
 		
 		//Set A
-		this.buttonList.add(new GuiButton(3, x - 88, y - 35, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(4, x - 88, y - 25, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(3, x - 88, y - 35, 10, 10, ">"));
+		this.buttonList.add(new GuiButton(4, x - 88, y - 25, 10, 9, "<"));
 		
 		//Set B
-		this.buttonList.add(new GuiButton(5, x - 88, y - 16, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(6, x - 88, y - 6, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(5, x - 88, y - 16, 10, 10, ">"));
+		this.buttonList.add(new GuiButton(6, x - 88, y - 6, 10, 9, "<"));
 		
 		//Set C
-		this.buttonList.add(new GuiButton(7, x - 88, y + 3, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(8, x - 88, y + 13, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(7, x - 88, y + 3, 10, 10, ">"));
+		this.buttonList.add(new GuiButton(8, x - 88, y + 13, 10, 9, "<"));
 		
 		//Set D
-		this.buttonList.add(new GuiButton(9, x - 88, y + 22, 10, 10, "+"));
-		this.buttonList.add(new GuiButton(10, x - 88, y + 32, 10, 9, "-"));
+		this.buttonList.add(new GuiButton(9, x - 88, y + 22, 10, 10, ">"));
+		this.buttonList.add(new GuiButton(10, x - 88, y + 32, 10, 9, "<"));
 		
+		
+		this.buttonList.add(new GuiButton(11, x - 88, y + 44, 20, 20, "Qty"));
 
-	
-		
+		this.buttonList.add((new GuiButton(12, x + 22, y + 44, 30, 10, "Coins:")));
+			this.collateItems();
+
 	}
 	/**
 	 * Draw the background layer of the GUI
@@ -151,6 +166,7 @@ public class GuiBank extends GuiContainer {
 	public void drawScreen(int x, int y, float f){
 		super.drawScreen(x, y, f);
         this.searchField.drawTextBox();
+        this.quantityField.drawTextBox();
 
 		
 
@@ -166,11 +182,12 @@ public class GuiBank extends GuiContainer {
 			searching = searchField.getText();
 		}
 		compile();
-
 	}
 	public void mouseClicked(int i, int j, int k){
 		super.mouseClicked(i, j, k);
 		searchField.mouseClicked(i, j, k);
+		quantityField.mouseClicked(i, j, k);
+
 	}
 	
 	/**
@@ -180,6 +197,13 @@ public class GuiBank extends GuiContainer {
 		if(c != 'e')
 			super.keyTyped(c, i);
 		searchField.textboxKeyTyped(c, i);
+		quantityField.textboxKeyTyped(c, i);
+		if(quantityField.getText().length() > 0)
+		try{
+			Integer.parseInt(quantityField.getText());
+		}catch (Exception E){
+			quantityField.setText("1");
+		}
 		searching = searchField.getText();
 		compile();
 	}
@@ -192,22 +216,35 @@ public class GuiBank extends GuiContainer {
 	
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
-		this.fontRenderer.drawString(entityPlayer.getEntityName() +"'s Bank", x - 88,y - 59, 0xFFFFFF); //10, 9
-		pages = Math.ceil(BlockBank.bankList.size()/4.0);
-		currentPage = (int)Math.floor((double)(index/4 + 1));
-		this.fontRenderer.drawString("Page " + currentPage + " of " + (int)pages, x - 90, y + 50, 0xFFFFFF);
 
 		this.fontRenderer.drawString("Name", x - 74,  y - 45, 0xFFFFFF);
 		this.fontRenderer.drawString("Bank",  x - 4,  y - 45 , 0xFFFFFF);
 		this.fontRenderer.drawString("Player", x + 40,  y - 45, 0xFFFFFF);
-		
+
 		int screenPosX = (this.width - this.xSize) / 2;
 		int screenPosY = (this.height - this.ySize) / 2;
-		
+		if(coolingDown){
+			this.fontRenderer.drawString(". . .", Permx + 40,Permy + 55, 0xf40909); //10, 9
+		}
+		else
+			this.fontRenderer.drawString("Ready!", Permx + 40,Permy + 55, 0x00ff29); //10, 9
+		this.fontRenderer.drawString(coins, Permx + 53,Permy + 46, 0x0); //10, 9
+
+		this.fontRenderer.drawString(entityPlayer.getEntityName() +"'s Bank", x - 88,y - 59, 0xFFFFFF); //10, 9
+
+		if(coolingDown)
+			tickCount++;
+
+		if(tickCount >= cooldown){
+			coolingDown = false;
+			tickCount = 0;
+
+		}
+
 		this.mc.renderEngine.bindTexture("/mods/" + gECON.modid + "/gui/bank/bank.png");
 		
 
-
+	
 		this.drawItems();
 	}
 	
@@ -217,38 +254,66 @@ public class GuiBank extends GuiContainer {
 	public void actionPerformed(GuiButton button)
 	{
 		if(button.id == 1)
-			if(currentPage < (int)pages)
+			if(currentlyDisplayedItems.size() > index + 4)
 				index += 4;
 			
 		if(button.id == 2)
 			if(index >= 4)
 				index -= 4;
 		
+		if(button.id == 11 && !coolingDown){
+			if(quantityField.getText().length() > 0)
+				transQuantity = Integer.parseInt(quantityField.getText());
+		}
+		if(button.id == 12 && !coolingDown){
+			coins = Integer.toString(DatabaseMethods.getCoins(entityPlayer.username));
+			coolingDown = true;
+		}
 		
 		//Incrementation
 		int i = button.id;
 		if(button.id == 3 || button.id == 5 || button.id == 7 || button.id == 9){
 			int j = (i - 3)/2;
-			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).rightQty > 0){
-				BlockBank.player.inventory.addItemStackToInventory(new ItemStack(currentlyDisplayedItems.get(index + j).ID, 1, 0));
-				currentlyDisplayedItems.get(index + j).rightItem.decr(1);
+			try{
+			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).rightItem.size > 0 && !coolingDown){
+				String itemID = Integer.toString(currentlyDisplayedItems.get(index + j).ID);
+				int numInBank;
+				if(transQuantity > (numInBank = DatabaseMethods.getNumItemsInBank(entityPlayer.username, itemID)))
+					transQuantity = numInBank;
+
+				for(int f = 0; f < transQuantity; f++){
+					BlockBank.player.inventory.addItemStackToInventory(new ItemStack(currentlyDisplayedItems.get(index + j).ID, 1, 0));
+				}
+				DatabaseMethods.addItemsIntoBankAccount(entityPlayer.getEntityName(), itemID, -1*transQuantity);
+				
+				//TODO Add a failsafe to make sure it doesn't take too many out of the bank.
+				collateItems();
+				coolingDown = true;
 				compile();
+			}
+			}catch (Exception E){
+				
 			}
 		}
 		
 		if(button.id == 4 || button.id == 6 || button.id == 8 || button.id == 10){
 			int j = (i - 4)/2;
-			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).leftQty > 0){
-				BlockBank.player.inventory.consumeInventoryItem(currentlyDisplayedItems.get(index + j).ID);
-				try{
-				currentlyDisplayedItems.get(index + j).rightItem.incr(1);
-				}catch(NullPointerException e){
-					BlockBank.bankList.add(new ItemStack(currentlyDisplayedItems.get(index + j).leftItem.ID, 1, 0));
-					
-				}
+			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).leftItem.size > 0 && !coolingDown){
+				if(transQuantity > currentlyDisplayedItems.get(index + j).leftItem.size)
+					transQuantity = currentlyDisplayedItems.get(index + j).leftItem.size;
+				
+				for(int f = 0; f < transQuantity; f++)
+					BlockBank.player.inventory.consumeInventoryItem(currentlyDisplayedItems.get(index + j).ID);
+				//TODO Add a failsafe to make sure it doesn't try to consume more than the player has.
+				DatabaseMethods.addItemsIntoBankAccount(entityPlayer.getEntityName(), Integer.toString(currentlyDisplayedItems.get(index + j).ID), transQuantity);
+				
+				
+				collateItems();
+				coolingDown = true;
 				compile();
 			}
 		}
+		
 
 	}
 	/**
@@ -303,24 +368,23 @@ public class GuiBank extends GuiContainer {
 	 * Populate the lists with items to be displayed.
 	 */
 	public void collateItems(){
-		ArrayList<BankItem> list = new ArrayList<BankItem>();
-		boolean turp = false;
-			for(ItemStack x: BlockBank.bankList){
-				turp = false;
-				for(BankItem y: list){
-					if(x.itemID == y.ID){
-						y.add(x);
-						turp = true;
-						break;
-					}
-				}
-				if(!turp){
-					list.add(new BankItem(x));
-				}
-			}
-
-		bankStoredItems = list;
+//		ArrayList<BankItem> list = new ArrayList<BankItem>();
+//		boolean turp = false;
+//			for(ItemStack x: BlockBank.bankList){
+//				turp = false;
+//				for(BankItem y: list){
+//					if(x.itemID == y.ID){
+//						y.add(x);
+//						turp = true;
+//						break;
+//					}
+//				}
+//				if(!turp){
+//					list.add(new BankItem(x));
+//				}
+//			}
 		
+		bankStoredItems = DatabaseMethods.getBankItems(entityPlayer.getEntityName());
 	}
 	public void convertToBankList(){
 		ArrayList<BankItem> list = new ArrayList<BankItem>();
@@ -330,7 +394,7 @@ public class GuiBank extends GuiContainer {
 			turp = false;
 			if(x != null){
 				for(BankItem y: list){
-					if(x != null && x.itemID == y.ID){
+					if(x != null && x.itemID == y.ID && y.meta == x.getItemDamage()){
 						y.add(x);
 						turp = true;
 						break;
@@ -354,6 +418,7 @@ public class GuiBank extends GuiContainer {
 		for(BankItem x: playerStoredItems){
 			list.add(new BankItemDuo(x, null));
 		}
+	try{
 		for(BankItem x: bankStoredItems){
 			turp = false;
 			for(BankItemDuo y: list){
@@ -367,23 +432,14 @@ public class GuiBank extends GuiContainer {
 				list.add(new BankItemDuo(null, x));
 			}
 		}
+	}catch (Exception E){
+		
+	}
 		currentlyDisplayedItems = list;
 		if(searching.length() > 0){
 			currentlyDisplayedItems = Searcher.recomb2(currentlyDisplayedItems, searching);
 		}
 	}
 	
-	/**
-	 * Remove all the ItemStacks which hvae 0 items in them
-	 * @return True if something is cleaned, false if nothing is cleaned.
-	 */
-	public boolean clean(){
-		for(ItemStack x: BlockBank.bankList){
-			if(x.stackSize == 0){
-				BlockBank.bankList.remove(x);
-				return true;
-			}
-		}
-		return false;
-	}
+
 }

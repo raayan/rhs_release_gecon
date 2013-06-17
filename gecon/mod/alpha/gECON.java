@@ -3,7 +3,7 @@ package gecon.mod.alpha;
 import gecon.mod.alpha.block.BlockBank;
 import gecon.mod.alpha.block.BlockMarket;
 import gecon.mod.alpha.block.BlockMarketAnalysis;
-import gecon.mod.alpha.block.BlockTradingTable;
+import gecon.mod.alpha.block.BlockTreasury;
 import gecon.mod.alpha.gui.GuiBank;
 import gecon.mod.alpha.misc.CreativeTabGECON;
 
@@ -14,6 +14,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.src.BaseMod;
@@ -52,7 +53,7 @@ public class gECON extends BaseMod {
 	 /**
 	  * the Trading Table block construction
 	  */
-	 public static Block tradingTableBlock = new BlockTradingTable(502, Material.rock).setHardness(1.5F).setResistance(10.0F).setStepSound(Block.soundStoneFootstep).setUnlocalizedName("tradingTableBlock");
+	 public static Block treasuryBlock = new BlockTreasury(502, Material.rock).setHardness(1.5F).setResistance(10.0F).setStepSound(Block.soundStoneFootstep).setUnlocalizedName("tradingTableBlock");
 	 
 	 /**
 	  * the Market Block block construction
@@ -75,12 +76,13 @@ public class gECON extends BaseMod {
 	  */
 	 @Init
 	 public void load(FMLInitializationEvent event) {
+		 
 		 //Setup the creative tab
 		 tabGECON = new CreativeTabGECON(CreativeTabs.getNextID(), bankBlock.blockID, "tabgECON", "gECON Tab");
 		 
 		 // Add items and blocks to creative tab
 		 bankBlock.setCreativeTab(gECON.tabGECON);
-		 tradingTableBlock.setCreativeTab(gECON.tabGECON);
+		 treasuryBlock.setCreativeTab(gECON.tabGECON);
 		 marketBlock.setCreativeTab(tabGECON);
 		 marketAnalysisBlock.setCreativeTab(tabGECON);
 
@@ -92,24 +94,22 @@ public class gECON extends BaseMod {
 		 
 		 //Adds it to the game registry.
 		 GameRegistry.registerBlock(bankBlock, modid + bankBlock.getUnlocalizedName2());
-		 GameRegistry.registerBlock(tradingTableBlock, modid + tradingTableBlock.getUnlocalizedName2());
+		 GameRegistry.registerBlock(treasuryBlock, modid + treasuryBlock.getUnlocalizedName2());
 		 GameRegistry.registerBlock(marketBlock, modid + marketBlock.getUnlocalizedName2());
 		 GameRegistry.registerBlock(marketAnalysisBlock, modid + marketAnalysisBlock.getUnlocalizedName2());
 		 
 		 //Add a name to the object
 		 LanguageRegistry.addName(bankBlock, "Bank");
-		 LanguageRegistry.addName(tradingTableBlock, "Trading Table");
+		 LanguageRegistry.addName(treasuryBlock, "Treasury");
 		 LanguageRegistry.addName(marketBlock, "Market");
 		 LanguageRegistry.addName(marketAnalysisBlock, "Market Analysis");
 
 		 //Add recipes
 		 GameRegistry.addRecipe(new ItemStack(bankBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), Block.chest});
-		 GameRegistry.addRecipe(new ItemStack(tradingTableBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), Block.brick});
+		 GameRegistry.addRecipe(new ItemStack(treasuryBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), Block.brick});
 		 GameRegistry.addRecipe(new ItemStack(marketBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), Block.blockDiamond});
 		 GameRegistry.addRecipe(new ItemStack(marketAnalysisBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), gECON.marketBlock});
-		 
-		 //Create the bank database
-		 globalBank = new ArrayList<ItemStack>();
+		 		
 	 }
 	 
 	 /**
@@ -122,8 +122,6 @@ public class gECON extends BaseMod {
 	  */
 	 public GuiContainer getContainerGUI(EntityClientPlayerMP player, int id, int x, int y, int z) {
 		 switch(id) {
-		 	case 30:
-		 		return new GuiBank(player, player.worldObj, x, y, z);
 		 	default:
 		 		return null;
 		 }

@@ -53,7 +53,7 @@ public class MethodsGECON {
 			}
 			
 			for(BankItem x: list){
-				System.out.println(x.name + x.getSize());
+				System.out.println(x.name + x.size);
 			}
 		bankStoredItems = list;
 	}

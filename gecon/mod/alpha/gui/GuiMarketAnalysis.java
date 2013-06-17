@@ -1,12 +1,15 @@
 package gecon.mod.alpha.gui;
 
 import gecon.mod.alpha.BankItem;
+import gecon.mod.alpha.DateAndPrice;
 import gecon.mod.alpha.gECON;
 import gecon.mod.alpha.container.ContainerGECON;
 import gecon.mod.alpha.misc.DatabaseMethods;
 import gecon.mod.alpha.misc.ItemConvertor;
 import gecon.mod.alpha.misc.Searcher;
+import gecon.mod.alpha.misc.Transaction;
 
+import java.sql.Date;
 import java.util.ArrayList;
 
 import net.minecraft.client.gui.GuiButton;
@@ -35,7 +38,7 @@ public class GuiMarketAnalysis extends GuiContainer {
 	 */
     public ArrayList<BankItem> bankStoredItems;
     public ArrayList<BankItem> showingItems;
-    private String[][] dap;
+    private ArrayList<Transaction> transactions;
 	private int index = 0;
 	private int xSize = 256;
 	private int ySize = 136;
@@ -43,6 +46,12 @@ public class GuiMarketAnalysis extends GuiContainer {
 	private double pages;
 	private int qty = 1;
 	private BankItem currentItem;
+	private int cooldown = 100;
+    double basePrice;
+
+	private int tickCount = 0;
+	private boolean coolingDown = false;
+	private String suggestion = "";
 	public GuiMarketAnalysis(EntityPlayer par1Player, World par2World, int x, int y, int z) {
 		super(new ContainerGECON(par1Player, par2World, x, y, z));
 		
@@ -61,12 +70,12 @@ public class GuiMarketAnalysis extends GuiContainer {
 		this.buttonList.add(new GuiButton(8, x + 80, y + 49, 15, 15, "<"));
 		this.buttonList.add(new GuiButton(9, x + 95, y + 49, 15, 15, ">"));
 
-		int buttX = 58;
+		int buttX = 60;
 		int buttY = y - 35;
-		this.buttonList.add(new GuiButton(0, x + buttX, buttY, 10, 19, "*"));
-		this.buttonList.add(new GuiButton(1, x + buttX, buttY + 19, 10, 19, "*"));
-		this.buttonList.add(new GuiButton(2, x + buttX, buttY + 38, 10, 19, "*"));
-		this.buttonList.add(new GuiButton(3, x + buttX, buttY + 57, 10, 19, "*"));
+		this.buttonList.add(new GuiButton(0, x + buttX, buttY, 8, 19, "="));
+		this.buttonList.add(new GuiButton(1, x + buttX, buttY + 19, 8, 19, "="));
+		this.buttonList.add(new GuiButton(2, x + buttX, buttY + 38, 8, 19, "="));
+		this.buttonList.add(new GuiButton(3, x + buttX, buttY + 57, 8, 19, "="));
 	}
 	/**
 	 * Draws the background layer of the gui containing the .png with a ModalRectangle frame over it
@@ -81,7 +90,7 @@ public class GuiMarketAnalysis extends GuiContainer {
 	public void drawScreen(int x, int y, float f){
 		super.drawScreen(x, y, f);
         this.searchField.drawTextBox();
-
+        
 		
 
 		
@@ -90,6 +99,7 @@ public class GuiMarketAnalysis extends GuiContainer {
 		if(searchField.getText().length() > 0){
 			searching = searchField.getText().toLowerCase();
 		}
+		
 	}
 	public void mouseClicked(int i, int j, int k){
 		super.mouseClicked(i, j, k);
@@ -121,10 +131,13 @@ public class GuiMarketAnalysis extends GuiContainer {
 				index -= 4;
 		
 		
-		if(button.id == 0 || button.id == 1 || button.id == 2 || button.id == 3){
-			if(i + index < showingItems.size() ){
+		if((button.id == 0 || button.id == 1 || button.id == 2 || button.id == 3) && !coolingDown){
+			if(i + index < showingItems.size()){
+				coolingDown = true;
 				currentItem = showingItems.get(i + index);
-				dap = DatabaseMethods.getLastTenPercentTransactions(Integer.toString(currentItem.ID));
+				transactions = DatabaseMethods.getLastTwentyTransactions(Integer.toString(currentItem.ID));
+				suggestion = DatabaseMethods.getEconomySuggestion("" + currentItem.ID);
+				basePrice = DatabaseMethods.getDefaultPrice(Integer.toString(currentItem.ID));
 			}
 			else
 				currentItem = null;
@@ -142,57 +155,78 @@ public class GuiMarketAnalysis extends GuiContainer {
     	this.fontRenderer.drawString("-", x - 108,y + 43, 0x0);
     	this.fontRenderer.drawString(Float.toString(0), x - 122,y + 43, 0x0);
     	this.fontRenderer.drawString("l", x - 104,y + 46, 0x0);
-    	
+		this.fontRenderer.drawString("l", x + 58,y + 46, 0x0);
+		int scaledGraphWidth = 162;
     	try{
-    		String date = dap[0][0];
-    		this.fontRenderer.drawString(ItemConvertor.transactionToDate(date), x - 105,y + 54, 0x0);
+    		Date date = transactions.get(0).getDate();
+    		this.fontRenderer.drawString(date.toString(), x - 105,y + 54, 0x0);
 
     	}catch (ArrayIndexOutOfBoundsException E){
         	this.fontRenderer.drawString("N/A", x - 110,y + 54, 0x0);
 
+    	}catch (IndexOutOfBoundsException E){
+        	this.fontRenderer.drawString("N/A", x - 110,y + 54, 0x0);
+
     	}
     	
+    	
 		try{
-			System.out.println(dap[0][dap[0].length - 1]);
-    		String date = dap[0][dap[0].length - 1];
-			this.fontRenderer.drawString(ItemConvertor.transactionToDate(date), x - 145 + 162,y + 54, 0x0);
+    		Date date = transactions.get(transactions.size() - 1).getDate();
+			this.fontRenderer.drawString(date.toString(), x - 145 + 162,y + 54, 0x0);
 
 	    }catch (ArrayIndexOutOfBoundsException E){
 				this.fontRenderer.drawString("N/A", x - 110 + 162,y + 54, 0x0);
-	    }
-		this.fontRenderer.drawString("l", x + 58,y + 46, 0x0);
+	    }catch (IndexOutOfBoundsException E){
+        	this.fontRenderer.drawString("N/A", x - 110 + 162,y + 54, 0x0);
+
+    	}
+		
+		
 
         for(int i = 1; i <= numdiv; i++){
         	this.fontRenderer.drawString("-", x - 108,y + 43 - (i)*(77/(numdiv)), 0x0);
     		this.fontRenderer.drawString(Integer.toString(i*40), x - 125,y + 43 - (i)*(77/(numdiv)), 0x0);
         }
         
+        
         //Add points
         int l = 77;
         int locY = y + 5;
-        int baseY = locY + 38;
-        for(int i = 0; i < 160; i += 5){
-        	int u = 1;
-        	String j = "";
-        	if((i) < dap[1].length){
-        		j = dap[1][i];
-        	}else{
-        		j = dap[1][dap[1].length - 1];
-        	}
-//        		double q = DatabaseMethods.getItemPrice(Integer.toString(currentItem.ID));.
-        		double q = 2;
-        		double r = Double.parseDouble(j);
-        		System.out.println(r/q);
-        		double percOfOld = r/q;
-        		
-        		int ScaledPos = (int)(38*(r/q));
-        		
-            	this.fontRenderer.drawString("~", x - 104 + i,locY, 0x0);
-            	
-            	this.fontRenderer.drawString("-", x - 104 + i,baseY - ScaledPos, 0x0);
+        int baseY = locY + 37;
+//        double basePrice = 1;
+        
+    	int numDiv = transactions.size();
+    	
+    	//Draw Raw Line
+        for(int i = 0; i < 32; i++){
+            	this.fontRenderer.drawString("~", x - 104 + i*5,locY + 2, 0x0);
 
-        	
         }
+
+        //Add Points
+        int separator = scaledGraphWidth/(transactions.size() - 1);
+        String coordChar = "x";
+        for(int i = 0; i < transactions.size(); i++){
+        		double price = transactions.get(i).getPrice();
+        		double scaledHeight = price/basePrice;
+        		
+        		if(i > 0){
+        			if(price < transactions.get(i - 1).getPrice()){
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0xf40909);
+        			}else if(price > transactions.get(i - 1).getPrice()){
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0x00ff29);
+
+        			}else{
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0x000000);
+
+        			}
+        		}
+        		else{
+    				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0xf7f7f1);
+        		}
+
+        }
+    	this.fontRenderer.drawString(Double.toString(basePrice), x - 104 + 75,locY, 0xda00ff);
 
 	}
 	
@@ -202,7 +236,15 @@ public class GuiMarketAnalysis extends GuiContainer {
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
 		this.fontRenderer.drawString("Market Analysis ", x - 104,y - 59, 0xFFF000); //10, 9
+		this.fontRenderer.drawString(suggestion, x - 10,y - 59, 0xda00ff); //10, 9
 
+		
+		if(coolingDown){
+			this.fontRenderer.drawString(". . .", x - 35,y + 55, 0xf40909); //10, 9
+		}
+		else
+			this.fontRenderer.drawString("Ready!", x - 35,y + 55, 0x00ff29); //10, 9
+		
 		if(currentItem != null){
 			this.fontRenderer.drawString("Item Name: " + currentItem.items.get(0).getDisplayName() , x - 100,y - 44, 0xFFFFFF); //10, 9
 			drawGraph();
@@ -210,6 +252,14 @@ public class GuiMarketAnalysis extends GuiContainer {
 			this.fontRenderer.drawString("Item Name: N/A", x - 100,y - 44, 0xFFFFFF); //10, 9
 		}
 		
+		if(coolingDown)
+			tickCount++;
+
+		if(tickCount >= cooldown){
+			coolingDown = false;
+			tickCount = 0;
+
+		}
 		this.collateItems();
 
 		this.drawItems();

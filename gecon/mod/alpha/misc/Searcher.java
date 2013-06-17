@@ -9,7 +9,7 @@ public class Searcher {
 	public static ArrayList<BankItem> recomb(ArrayList<BankItem> searchList, String search){
 		ArrayList<BankItem> list = new ArrayList<BankItem>();
 		for(BankItem x: searchList){
-			if(x.name.toLowerCase().indexOf(search) >= 0)
+			if(x.items.get(0).getDisplayName().toLowerCase().indexOf(search) >= 0)
 				list.add(x);
 		}
 		return list;
@@ -18,7 +18,7 @@ public class Searcher {
 	public static ArrayList<BankItemDuo> recomb2(ArrayList<BankItemDuo> searchList, String search){
 		ArrayList<BankItemDuo> list = new ArrayList<BankItemDuo>();
 		for(BankItemDuo x: searchList){
-			if(x.name.toLowerCase().indexOf(search) >= 0)
+			if(x.items.get(0).getDisplayName().toLowerCase().indexOf(search) >= 0)
 				list.add(x);
 		}
 		return list;
