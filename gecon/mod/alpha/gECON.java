@@ -65,7 +65,7 @@ public class gECON extends BaseMod {
 	  */
 	 public static Block marketAnalysisBlock = new BlockMarketAnalysis(504, Material.rock).setHardness(1.5F).setResistance(10.0F).setStepSound(Block.soundStoneFootstep).setUnlocalizedName("marketAnalysisBlock");
 
-	 
+	 public static EntityPlayer hardPlayer;
 	 //@SidedProxy(clientSide = Reference.CLIENT_PROXY_CLASS, serverSide = Reference.SERVER_PROXY_CLASS)
 
 	 //Creative Tab
@@ -110,6 +110,7 @@ public class gECON extends BaseMod {
 		 GameRegistry.addRecipe(new ItemStack(marketBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), Block.blockDiamond});
 		 GameRegistry.addRecipe(new ItemStack(marketAnalysisBlock), new Object[]{"GRG", "GCG", "GRG", Character.valueOf('G'), Item.ingotGold, Character.valueOf('R'), Item.redstone, Character.valueOf('C'), gECON.marketBlock});
 		 		
+		 hardPlayer = ModLoader.getMinecraftInstance().thePlayer;
 	 }
 	 
 	 /**

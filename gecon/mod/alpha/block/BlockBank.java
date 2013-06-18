@@ -43,12 +43,12 @@ public class BlockBank extends BlockGECON {
 	 */
 	@SideOnly(Side.CLIENT)
 	public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int f, float a, float b, float c) {	
-		this.player = player;
 		if (player instanceof EntityPlayerMP) {
 			ModLoader.serverOpenWindow((EntityPlayerMP) player, new ContainerGECON(player, world, x, y, z), 30, x, y, z);
 		} else {
 			ModLoader.openGUI((EntityPlayerSP) player, new GuiBank(player, world, x, y, z));
 		}
+		this.player = (EntityPlayer) player;
 
 		return true;
 	}

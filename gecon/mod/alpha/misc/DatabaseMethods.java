@@ -568,6 +568,7 @@ public class DatabaseMethods {
 	 * @return
 	 */
 	public static double getDefaultPrice(String MCItemID) {
+		if(!MCItemID.equals("266")){
 		 try {
 		 	String connURL = connectioinURL;
 		 	Connection conn = DriverManager.getConnection(connURL, "","");
@@ -591,7 +592,9 @@ public class DatabaseMethods {
 		 	ex.printStackTrace();
 		 }
 		 return -1;
-		}
+		}else
+			 return 200;
+	}
 	/**
 	 * Adds a quantity of items into a bank account.  Deletes entry if the quantity pulls the bank quantity to 0.  Adds a new entry if there isn't an existing one for the player and item.
 	 * @param playerName the String name of the player 
@@ -847,7 +850,8 @@ public class DatabaseMethods {
 				ResultSet rs = s.getResultSet();
 				
 				while((rs!=null) && (rs.next())) {
-					transactions.add(new Transaction(gECONItemID, rs.getDouble(2), rs.getDate(1)));
+					Transaction trans = new Transaction(gECONItemID, rs.getDouble(2), rs.getDate(1));
+					transactions.add(trans);
 				}
 				
 				s.close();
@@ -859,7 +863,19 @@ public class DatabaseMethods {
 				return null;
 			}
 		}
-
+		public static double getHighAndLow(String MCItemID, double base){
+			ArrayList<Transaction> transactions = getLastTwentyTransactions(MCItemID);
+			double max = Integer.MIN_VALUE;
+			for(Transaction x: transactions){
+				if(x.getPrice() > max)
+					max = x.getPrice();
+			}			
+			max = (int)((max/base)*100);
+			if(max < 200)
+				max = 200;
+			return max;
+			
+		}
 
 		/**
 		 * Records a transation into the database

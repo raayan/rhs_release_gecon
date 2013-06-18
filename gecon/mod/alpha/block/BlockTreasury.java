@@ -1,5 +1,6 @@
 package gecon.mod.alpha.block;
 
+import gecon.mod.alpha.gECON;
 import gecon.mod.alpha.container.ContainerGECON;
 import gecon.mod.alpha.gui.GuiBank;
 import gecon.mod.alpha.gui.GuiTreasury;
@@ -49,12 +50,12 @@ public class BlockTreasury extends BlockGECON {
 	 * @param c TBD
 	 */
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int f, float a, float b, float c) {
-    	this.player = player;
 		if (player instanceof EntityPlayerMP) {
 			ModLoader.serverOpenWindow((EntityPlayerMP) player, new ContainerGECON(player, world, x, y, z), 31, x, y, z);
 		} else {
-			ModLoader.openGUI((EntityPlayerSP) player, new GuiTreasury(player, world, x, y, z));
+			ModLoader.openGUI(player, new GuiTreasury(player, world, x, y, z));
 		}
+    	this.player = player;
 //		DatabaseMethods.hasPlayerAccount(par5EntityPlayer.username);
 //    	
 //		int uy = 0;

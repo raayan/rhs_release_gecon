@@ -48,7 +48,12 @@ public class GuiMarketAnalysis extends GuiContainer {
 	private BankItem currentItem;
 	private int cooldown = 100;
     double basePrice;
-
+    private double suggestedPrice;
+    
+    private int messageCooldown = 2000;
+    private int messageTimer = 0;
+    private boolean messageCooling = false;
+    private double hal;
 	private int tickCount = 0;
 	private boolean coolingDown = false;
 	private String suggestion = "";
@@ -69,7 +74,7 @@ public class GuiMarketAnalysis extends GuiContainer {
         int y = scaledRes.getScaledHeight()/2;
 		this.buttonList.add(new GuiButton(8, x + 80, y + 49, 15, 15, "<"));
 		this.buttonList.add(new GuiButton(9, x + 95, y + 49, 15, 15, ">"));
-
+		
 		int buttX = 60;
 		int buttY = y - 35;
 		this.buttonList.add(new GuiButton(0, x + buttX, buttY, 8, 19, "="));
@@ -138,6 +143,10 @@ public class GuiMarketAnalysis extends GuiContainer {
 				transactions = DatabaseMethods.getLastTwentyTransactions(Integer.toString(currentItem.ID));
 				suggestion = DatabaseMethods.getEconomySuggestion("" + currentItem.ID);
 				basePrice = DatabaseMethods.getDefaultPrice(Integer.toString(currentItem.ID));
+				suggestedPrice = DatabaseMethods.getCurrentSuggestedPrice(currentItem.ID + "");
+				if(currentItem != null){
+					hal = DatabaseMethods.getHighAndLow(currentItem.ID + "", basePrice);
+				}
 			}
 			else
 				currentItem = null;
@@ -148,7 +157,6 @@ public class GuiMarketAnalysis extends GuiContainer {
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
-        int numdiv = 5;
         
         int begDate = 0;
         int endDate = 10;
@@ -157,6 +165,8 @@ public class GuiMarketAnalysis extends GuiContainer {
     	this.fontRenderer.drawString("l", x - 104,y + 46, 0x0);
 		this.fontRenderer.drawString("l", x + 58,y + 46, 0x0);
 		int scaledGraphWidth = 162;
+		
+
     	try{
     		Date date = transactions.get(0).getDate();
     		this.fontRenderer.drawString(date.toString(), x - 105,y + 54, 0x0);
@@ -181,11 +191,11 @@ public class GuiMarketAnalysis extends GuiContainer {
 
     	}
 		
-		
-
+        int numdiv = 5;
+        int ySep = (int) (hal/numdiv);
         for(int i = 1; i <= numdiv; i++){
         	this.fontRenderer.drawString("-", x - 108,y + 43 - (i)*(77/(numdiv)), 0x0);
-    		this.fontRenderer.drawString(Integer.toString(i*40), x - 125,y + 43 - (i)*(77/(numdiv)), 0x0);
+    		this.fontRenderer.drawString(Integer.toString(i*ySep), x - 125,y + 43 - (i)*(77/(numdiv)), 0x0);
         }
         
         
@@ -197,36 +207,63 @@ public class GuiMarketAnalysis extends GuiContainer {
         
     	int numDiv = transactions.size();
     	
-    	//Draw Raw Line
-        for(int i = 0; i < 32; i++){
-            	this.fontRenderer.drawString("~", x - 104 + i*5,locY + 2, 0x0);
-
-        }
+    	
 
         //Add Points
-        int separator = scaledGraphWidth/(transactions.size() - 1);
+        int separator = 1;
+        if(transactions.size() > 1)
+        	separator = scaledGraphWidth/(transactions.size() - 1);
         String coordChar = "x";
+        int midPos = (int)(77*(100/hal));
         for(int i = 0; i < transactions.size(); i++){
         		double price = transactions.get(i).getPrice();
         		double scaledHeight = price/basePrice;
-        		
-        		if(i > 0){
+        		if(i == transactions.size() - 1){
+        			if(transactions.size() > 1){
+        				if(price < transactions.get(i - 1).getPrice()){
+        					this.fontRenderer.drawString(coordChar, x - 104 + i*separator - 4,baseY - (int)(midPos*scaledHeight), 0xf40909);
+        				}else if(price > transactions.get(i - 1).getPrice()){
+        					this.fontRenderer.drawString(coordChar, x - 104 + i*separator -4,baseY - (int)(midPos*scaledHeight), 0x00ff29);
+
+        				}else{
+        					this.fontRenderer.drawString(coordChar, x - 104 + i*separator -4,baseY - (int)(midPos*scaledHeight), 0x000000);
+
+        				}
+        			}else{
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(midPos*scaledHeight), 0xf7f7f1);
+        			}
+        		}else if(i > 0){
         			if(price < transactions.get(i - 1).getPrice()){
-        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0xf40909);
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(midPos*scaledHeight), 0xf40909);
         			}else if(price > transactions.get(i - 1).getPrice()){
-        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0x00ff29);
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(midPos*scaledHeight), 0x00ff29);
 
         			}else{
-        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0x000000);
+        				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(midPos*scaledHeight), 0x000000);
 
         			}
         		}
         		else{
-    				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(38*scaledHeight), 0xf7f7f1);
+    				this.fontRenderer.drawString(coordChar, x - 104 + i*separator,baseY - (int)(midPos*scaledHeight), 0xf7f7f1);
         		}
 
         }
-    	this.fontRenderer.drawString(Double.toString(basePrice), x - 104 + 75,locY, 0xda00ff);
+      //Draw Raw Line
+        for(int i = 0; i < 32; i++){
+            	this.fontRenderer.drawString("-", x - 104 + i*5,baseY + 2 - midPos, 0x0);
+
+        }
+    	this.fontRenderer.drawString(Double.toString(basePrice), x - 104 + 55,baseY + 2 - midPos, 0xda00ff);
+    	double scaledHeight = suggestedPrice/basePrice;
+    	for(int i = 0; i < 32; i++){
+        	this.fontRenderer.drawString("-", x - 104 + i*5,baseY - (int)(midPos*scaledHeight), 0xAA60B2);
+
+    }
+    String strung = Double.toString(suggestedPrice);
+    if(strung.length() > 4){
+    	strung = strung.substring(0, 4);
+    }
+	this.fontRenderer.drawString(strung, x - 104 + 110,baseY - (int)(midPos*scaledHeight), 0x60B2B2);
 
 	}
 	
@@ -260,6 +297,8 @@ public class GuiMarketAnalysis extends GuiContainer {
 			tickCount = 0;
 
 		}
+		
+	
 		this.collateItems();
 
 		this.drawItems();
@@ -272,6 +311,7 @@ public class GuiMarketAnalysis extends GuiContainer {
 	public void drawGuiContainerForegroundLayer() {
 		
 	}
+
 	private void drawItems(){
 		int itemWidth = 53;
 		int itemHeight = 19;
@@ -281,7 +321,6 @@ public class GuiMarketAnalysis extends GuiContainer {
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
         int x = (scaledRes.getScaledWidth() - 53)/2;
         int y = (scaledRes.getScaledHeight())/2;
-//System.out.println(y);
         
         
 //      Legacy Code

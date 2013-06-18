@@ -18,6 +18,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.src.ModLoader;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
@@ -75,6 +76,7 @@ public class GuiBank extends GuiContainer {
 	/**
 	 * The quantity which you are withdrawing and depositing at.
 	 */
+	private World gameWorld;
 	private String coins;
 	private int qty = 1;
 	private int cooldown = 100;
@@ -90,10 +92,11 @@ public class GuiBank extends GuiContainer {
 	 */
 	public GuiBank(EntityPlayer player, World world, int x, int y, int z) {
 		super(new ContainerGECON(player, world, x, y, z));		
-		this.entityPlayer = BlockBank.player;
+		this.entityPlayer = player;
 		compile();
 		DatabaseMethods.hasPlayerAccount(entityPlayer.username);
 		coins = Integer.toString(DatabaseMethods.getCoins(entityPlayer.username));
+		gameWorld = world;
 	}
 	
 	/**
@@ -148,7 +151,6 @@ public class GuiBank extends GuiContainer {
 
 		this.buttonList.add((new GuiButton(12, x + 22, y + 44, 30, 10, "Coins:")));
 			this.collateItems();
-
 	}
 	/**
 	 * Draw the background layer of the GUI
@@ -298,6 +300,7 @@ public class GuiBank extends GuiContainer {
 		
 		if(button.id == 4 || button.id == 6 || button.id == 8 || button.id == 10){
 			int j = (i - 4)/2;
+			try{
 			if(j + index < currentlyDisplayedItems.size() && currentlyDisplayedItems.get(index + j).leftItem.size > 0 && !coolingDown){
 				if(transQuantity > currentlyDisplayedItems.get(index + j).leftItem.size)
 					transQuantity = currentlyDisplayedItems.get(index + j).leftItem.size;
@@ -311,6 +314,9 @@ public class GuiBank extends GuiContainer {
 				collateItems();
 				coolingDown = true;
 				compile();
+			}
+			}catch (Exception E){
+				
 			}
 		}
 		

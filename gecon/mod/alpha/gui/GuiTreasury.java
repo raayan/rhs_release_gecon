@@ -32,6 +32,7 @@ public class GuiTreasury extends GuiContainer{
 		this.player = player;
 		DatabaseMethods.hasPlayerAccount(player.username);
 		coins = DatabaseMethods.getCoins(player.username);
+
 	}
 
 	@Override
@@ -123,11 +124,14 @@ public class GuiTreasury extends GuiContainer{
 	}
 	public void actionPerformed(GuiButton button){
 		if(button.id == 0){
-			DatabaseMethods.addCoins(player.username, (int)(amt*currentXfer));
-			DatabaseMethods.addItemsIntoBankAccount(player.username, "266", -1*amt);
-			coins = DatabaseMethods.getCoins(player.username);
-			ingots = DatabaseMethods.getNumItemsInBank(player.username, "266");
-			currentXfer = DatabaseMethods.getCurrentSuggestedPrice("266");
+			if(amt > 0){
+				DatabaseMethods.addCoins(player.username, (int)(amt*currentXfer));
+				DatabaseMethods.addItemsIntoBankAccount(player.username, "266", -1*amt);
+				coins = DatabaseMethods.getCoins(player.username);
+				ingots = DatabaseMethods.getNumItemsInBank(player.username, "266");
+				currentXfer = DatabaseMethods.getCurrentSuggestedPrice("266");
+				amt = 0;
+			}
 		}
 	}
 

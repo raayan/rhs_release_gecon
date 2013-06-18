@@ -53,14 +53,21 @@ public class GuiMarket extends GuiContainer {
 	private boolean creating = false;
 	private int qty = 0;
 	private int Sqty = 0;
+	private int haveCurrently = 0;
 	private double Sprice = 0;
 	private BankItem currentItem;
 	private MarketOrder currentOrder;
 	private GuiButton create;
+	private GuiButton cancel;
 	private GuiButton items;
 	private GuiButton submit;
-
-	private int cooldown = 100;
+	public boolean canCancel = false;
+	
+	private int messageCooldown = 300;
+	private int messageTimer = 0;
+	private boolean messageCooling = false;
+	
+	private int cooldown = 50;
     double suggestedPrice;
     String coins = "";
     private boolean viewBank = true;
@@ -133,6 +140,9 @@ public class GuiMarket extends GuiContainer {
 		create = new GuiButton(50, x + buttX + 72, buttY + 105, 61, 10, "Fulfiling");
 		this.buttonList.add(create);
 
+		cancel = new GuiButton(90, x + buttX + 11, buttY + 155, 61, 10, "Cancel");
+		this.buttonList.add(cancel);
+		
 		submit = new GuiButton(60, x + buttX + 72, buttY + 155, 61, 10, "Submit");
 		this.buttonList.add(submit);
 		
@@ -199,10 +209,10 @@ public class GuiMarket extends GuiContainer {
 				if(qty > currentOrder.quantity){
 					qty = currentOrder.quantity;
 					qtyFieldF.setText("" +qty);
-					lastMessage = "Max transfer for this order is " + qty + "!";
+					setMessage("Max transfer for this order is " + qty + "!");
 				}
 			}catch (Exception E){
-				lastMessage = "Can Only Enter Numbers!";
+				setMessage("Can Only Enter Numbers!");
 				qtyFieldF.setText("0");
 				qty = 0;
 			}
@@ -214,13 +224,13 @@ public class GuiMarket extends GuiContainer {
 		if(qtyFieldC.getText().length() > 0)
 			try{
 				Sqty = Integer.parseInt(qtyFieldC.getText());
-				if(Sqty > currentItem.size && buying){
-					Sqty = currentItem.size;
+				if(Sqty > haveCurrently && buying){
+					Sqty = haveCurrently;
 					qtyFieldC.setText("" +Sqty);
-					lastMessage = "You Only Have " + Sqty + " " + currentItem.name +"!";
+					setMessage("You Only Have " + Sqty + " " + currentItem.name +"!");
 				}
 			}catch (Exception E){
-				lastMessage = "Can Only Enter Numbers!";
+				setMessage("Can Only Enter Numbers!");
 				qtyFieldC.setText("0");
 				Sqty = 0;
 			}
@@ -234,7 +244,7 @@ public class GuiMarket extends GuiContainer {
 				//TODO
 				Sprice = Double.parseDouble(priceFieldC.getText());
 			}catch (Exception E){
-				lastMessage = "Can Only Enter Numbers!";
+				setMessage("Can Only Enter Numbers!");
 				priceFieldC.setText("0");
 				Sprice = 0;
 			}
@@ -258,18 +268,26 @@ public class GuiMarket extends GuiContainer {
 				index -= 4;
 		
 		if(button.id == 20)
+			try{
 			if(index >= 4)
 				indexOrder -= 4;
-		
+			}catch (NullPointerException E){
+				setMessage("No more pages!");
+			}
 		if(button.id == 21)
+			try{
 			if(viewingOrders.size() > index + 4)
 				indexOrder += 4;
+			}catch (NullPointerException E){
+				setMessage("No more pages!");
+			}
 		
 		if((button.id == 0 || button.id == 1 || button.id == 2 || button.id == 3) && !coolingDown){
 			if(i + index < showingItems.size()){
 				coolingDown = true;
 				currentItem = showingItems.get(i + index);
 				currentItem.updateSPrice();
+				haveCurrently = DatabaseMethods.getNumItemsInBank(player.username, currentItem.ID + "");
 				suggestedPrice = 0; //Method to getSuggested Price
 				if(buying)
 					viewingOrders = DatabaseMethods.getTotalSellOrders("" + currentItem.ID);
@@ -295,6 +313,7 @@ public class GuiMarket extends GuiContainer {
 			else
 				create.displayString = "Fulfiling";
 			currentItem = null;
+			canCancel = false;
 		}
 		if(button.id == 30 && !coolingDown){
 			coolingDown = true;
@@ -324,6 +343,11 @@ public class GuiMarket extends GuiContainer {
 				try{
 				if(i + indexOrder < viewingOrders.size()){
 					currentOrder = viewingOrders.get(i);
+					if(currentOrder.playerName.equals(player.username) && !creating){
+						canCancel = true;
+					}else{
+						canCancel = false;
+					}
 				}else{
 					currentOrder = null;
 				}
@@ -333,11 +357,43 @@ public class GuiMarket extends GuiContainer {
 		}
 		if((button.id == 40 || button.id == 41 || button.id == 42 || button.id == 43) && !coolingDown){
 			i = button.id - 40;
-			if(i + indexOrder < viewingOrders.size()){
-				currentOrder = viewingOrders.get(i);
-				
-			}else{
-				currentOrder = null;
+			try{
+				if(i + indexOrder < viewingOrders.size()){
+					currentOrder = viewingOrders.get(i);
+					coins = "" + DatabaseMethods.getCoins(player.username);
+
+					if(currentOrder != null)				{	
+						if(!currentOrder.buyOrder && currentOrder.quantity*currentOrder.price <= Integer.parseInt(coins)){
+							System.out.println("Done3");
+
+							DatabaseMethods.addCoins(currentOrder.playerName, (int)(currentOrder.quantity*currentOrder.price));
+							DatabaseMethods.addCoins(player.username, (int)(-1*currentOrder.quantity*currentOrder.price));
+							DatabaseMethods.addItemsIntoBankAccount(player.username, Integer.toString(currentOrder.item.ID), qty);
+						}else if(currentOrder.buyOrder && currentOrder.quantity <= DatabaseMethods.getNumItemsInBank(player.username, currentOrder.item.ID + "")){
+							System.out.println("Done4");
+
+							DatabaseMethods.addCoins(player.username, (int)(currentOrder.quantity*currentOrder.price));
+							DatabaseMethods.addItemsIntoBankAccount(player.username, Integer.toString(currentOrder.item.ID), -1*qty);
+						}
+						DatabaseMethods.setOrderFilled(currentOrder);
+						DatabaseMethods.recordTransaction(new Transaction(DatabaseMethods.MCItemIDToGECONItemID(Integer.toString(currentOrder.item.ID)), currentOrder.price, null));
+						
+					}
+					if(buying)
+						viewingOrders = DatabaseMethods.getTotalSellOrders("" + currentOrder.item.ID);
+					else
+						viewingOrders = DatabaseMethods.getTotalBuyOrders("" + currentOrder.item.ID);	
+					if(viewBank){
+						bankStoredItems = DatabaseMethods.getBankItems(this.player.username);
+					}else {
+						bankStoredItems = allItem;
+					}
+					currentOrder = null;
+				}else{
+					currentOrder = null;
+				}
+			}catch (Exception E){
+				lastMessage = "Emptry Entries!";
 			}
 		}
 
@@ -368,7 +424,7 @@ public class GuiMarket extends GuiContainer {
 							bankStoredItems = allItem;
 						}
 					}else{
-						lastMessage = "Insufficient Funds";
+						setMessage("Insufficient Funds");
 					}
 				}else if(!creating && qty > 0 && !coolingDown && !buying){
 					coolingDown = true;
@@ -379,7 +435,9 @@ public class GuiMarket extends GuiContainer {
 							DatabaseMethods.setOrderPartiallyFilled(currentOrder, currentOrder.quantity - qty);
 						}
 						DatabaseMethods.addCoins(player.username, (int)(qty*currentOrder.price));
+						DatabaseMethods.addItemsIntoBankAccount(player.username, Integer.toString(currentOrder.item.ID), -1*qty);
 						DatabaseMethods.addItemsIntoBankAccount(currentOrder.playerName, Integer.toString(currentOrder.item.ID), qty);
+
 						java.util.Date today = new java.util.Date();
 						java.sql.Date sqlToday = new java.sql.Date(today.getTime());
 						DatabaseMethods.recordTransaction(new Transaction(DatabaseMethods.MCItemIDToGECONItemID(Integer.toString(currentOrder.item.ID)), currentOrder.price, sqlToday));
@@ -395,10 +453,11 @@ public class GuiMarket extends GuiContainer {
 						}
 						currentOrder = null;
 					}else{
-						lastMessage = "Insufficient " + currentOrder.item.items.get(0).getDisplayName();
+						setMessage("Insufficient " + currentOrder.item.items.get(0).getDisplayName());
 					}
 				}else if(creating && Sqty > 0 && Sprice > 0 && !coolingDown){
 					coolingDown = true;
+					try{
 					if(buying){
 						DatabaseMethods.createSellOrder(player.username, ""+ currentItem.ID, Sqty, Sprice);
 						viewingOrders = DatabaseMethods.getTotalSellOrders("" + currentItem.ID);
@@ -408,8 +467,11 @@ public class GuiMarket extends GuiContainer {
 							DatabaseMethods.createBuyOrder(player.username, ""+ currentItem.ID, Sqty, Sprice);
 							viewingOrders = DatabaseMethods.getTotalBuyOrders("" + currentItem.ID);	
 						}else{
-							lastMessage = "Insufficient Funds";
+							setMessage("Insufficient Funds");
 						}
+					}
+					}catch (NullPointerException E){
+						lastMessage = "No Item Selected!";
 					}
 
 				}
@@ -419,10 +481,32 @@ public class GuiMarket extends GuiContainer {
 				qtyFieldF.setText("");
 				coins = "" + DatabaseMethods.getCoins(player.username);
 		}
+		if(button.id == 90 && !coolingDown){
+			if(currentOrder != null){
+				coolingDown = true;
+				if(currentOrder.buyOrder){
+					DatabaseMethods.addCoins(player.username, (int)(currentOrder.quantity*currentOrder.price));
+				}else{
+					DatabaseMethods.addItemsIntoBankAccount(player.username, currentOrder.item.ID + "", currentOrder.quantity);
+				}
+				DatabaseMethods.setOrderFilled(currentOrder);
+				if(buying)
+					viewingOrders = DatabaseMethods.getTotalSellOrders("" + currentOrder.item.ID);
+				else
+					viewingOrders = DatabaseMethods.getTotalBuyOrders("" + currentOrder.item.ID);	
+				currentOrder = null;
+				if(viewBank){
+					bankStoredItems = DatabaseMethods.getBankItems(this.player.username);
+				}else {
+					bankStoredItems = allItem;
+				}
+			}
+		}
 	}
 	
 	@Override
 	protected void drawGuiContainerForegroundLayer(int par1, int par2) {
+		cancel.enabled = canCancel;
 		ScaledResolution scaledRes = new ScaledResolution(this.mc.gameSettings, this.mc.displayWidth, this.mc.displayHeight);
         int x = scaledRes.getScaledWidth()/2;
         int y = scaledRes.getScaledHeight()/2;
@@ -466,7 +550,7 @@ public class GuiMarket extends GuiContainer {
 				Date d = new Date(System.currentTimeMillis());
 				Calendar cal2 = Calendar.getInstance(); cal2.setTime(d);
 				this.fontRenderer.drawString(daysBetween(cal1, cal2) + " Day(s) ago", x - 122,y + 70, 0xAA60B2); //10, 9
-				this.fontRenderer.drawString("Buying " + qty + " of " + currentOrder.item.name + " for " + currentOrder.price*qty , x - 98,y + 81, 0xAA60B2); //10, 9
+				this.fontRenderer.drawString("Buying " + qty + " of " + currentOrder.item.name + " for " + currentOrder.price*qty , x - 98,y + 80, 0xAA60B2); //10, 9
 			}
 			else{
 				this.fontRenderer.drawString("Selected Order: " + currentOrder.item.name + " Price: " + currentOrder.price + " Qty: " + currentOrder.quantity, x - 122,y + 50, 0x60B2B2); //10, 9
@@ -504,6 +588,15 @@ public class GuiMarket extends GuiContainer {
 			tickCount = 0;
 
 		}
+		
+		if(messageCooling)
+			tickCount++;
+
+		if(messageTimer >= messageCooldown){
+			messageCooling = false;
+			messageTimer = 0;
+
+		}
 		this.collateItems();
 
 		this.drawItems();
@@ -515,6 +608,11 @@ public class GuiMarket extends GuiContainer {
 	 */
 	public void drawGuiContainerForegroundLayer() {
 		
+	}
+	public boolean setMessage(String mesage){
+		lastMessage = mesage;
+		messageCooling = true;
+		return true;
 	}
 	 public static long daysBetween(Calendar startDate, Calendar endDate) {
 	        Calendar date = (Calendar) startDate.clone();
